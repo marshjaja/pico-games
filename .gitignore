@@ -1,0 +1,9 @@
+# Ignore .vscode folder
+.vscode/
+.DS_Store
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env
