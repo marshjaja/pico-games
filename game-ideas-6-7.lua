@@ -1,4 +1,3 @@
-
 function _init()
 i_plr()
 	mx=0
@@ -21,8 +20,9 @@ end
 
 function _update()
     --animate
+ mine_plr()
 	move_player()
-	mine_plr()
+	
 
 end
 
@@ -66,7 +66,7 @@ function _draw()
 	print(keys_text, x-8, y + 16, 7)      -- white
 	print(potions_text, x-8, y + 24, 7)  -- white
 
-	if (btn(5)) then show_inventory()end
+	if (btn(❎)) show_inventory()
 
 	--rectfill(0,0,127,15,8)
 end
@@ -103,7 +103,7 @@ function i_plr()
 		keys=0,
 		potions=0,
 		flp=false,
-		idle=true,
+		state = "idle",
 		mining=false,
 		facing="right",
 		timing = 0.15,
@@ -126,79 +126,75 @@ end
 
 
 function move_player()
-	 plr.idle = true
-	if plr.idle==true then
-		plr.sp=6
-	end
- -- animate
- 
-  plr.sprite = plr.sprite + plr.timing
-  if plr.sprite >= 5 then
-    plr.sprite = 1
-  end
-
-
-	
- 
- if map_collide(plr.x,plr.y,plr.w,plr.h) then
-		plr.x=plr.ox
-		plr.y=plr.oy
- end
- 
- cam_move()
- 
- 
- interact(plr.x, plr.y)
-
-	animate_plr()
-
- -- wrap around
- --if plr.x > 127 then plr.x = -7 end
- --if plr.x < -7 then plr.x = 128 end
+	-- set default state
+	-- only reset to idle if not already mining
+if plr.state != "mining" then
+  plr.state = "idle"
 end
+
+
+	-- check movement input and update position/state
+	plr.ox = plr.x
+	plr.oy = plr.y
+
+	if btn(⬅️) and can_move(plr.x - 1, plr.y) then
+		plr.x -= 1
+		plr.flp = true
+		plr.facing = "left"
+		plr.state = "walk"
+	elseif btn(➡️) and can_move(plr.x + 1, plr.y) then
+		plr.x += 1
+		plr.flp = false
+		plr.facing = "right"
+		plr.state = "walk"
+	elseif btn(⬆️) and can_move(plr.x, plr.y - 1) then
+		plr.y -= 1
+		plr.facing = "up"
+		plr.state = "walk"
+	elseif btn(⬇️) and can_move(plr.x, plr.y + 1) then
+		plr.y += 1
+		plr.facing = "down"
+		plr.state = "walk"
+	end
+	
+
+	if map_collide(plr.x, plr.y, plr.w, plr.h) then
+		plr.x = plr.ox
+		plr.y = plr.oy
+	end
+
+	cam_move()
+	interact(plr.x, plr.y)
+	animate_plr()
+end
+
 
 function animate_plr()
-	plr.ox=plr.x
-	plr.oy=plr.y
- -- move right
- if btn(0) then
-		if can_move(plr.x - 1, plr.y) then
-			plr.x = plr.x - 1
-			plr.flp = true
-			plr.facing = "left"
-			plr.idle = false
+	if plr.state == "walk" then
+		if plr.sp < 4.6 then
+			plr.sp += 0.2
+		else
+			plr.sp = 1
 		end
-	elseif btn(1) then
-			if can_move(plr.x + 1, plr.y) then
-				plr.x = plr.x + 1
-				plr.flp = false
-				plr.facing = "right"
-				plr.idle = false
-			end
-		end
-
-	if btn(2) then
-		if can_move(plr.x, plr.y - 1) then
-			plr.y = plr.y - 1
-			plr.facing = "up"
-			plr.idle = false
-		end
-	elseif btn(2) then
-		if can_move(plr.x, plr.y + 1) then
-			plr.y = plr.y - 1
-			plr.facing = "down"
-			plr.idle=false
-		end
+	elseif plr.state == "mining" then
+		plr.sp = 10
+		plr.state = "idle"
+		print("mining!", 0, 10, 8)
+	
+ -- single mining frame
+	else
+		plr.sp = 6 -- idle frame
 	end
 end
+
 
 function cam_move()
 	 if plr.x < box.x then
  	plr.x =box.x
- 	cam_x= cam_x - 1
+ 	cam_x-=1
  elseif plr.x > box.x2 then
  	plr.x =box.x2
- 	cam_x= cam_x+ 1
+ 	cam_x+=1
  end
  
  if cam_x <=0 then
@@ -225,21 +221,17 @@ function cam_move()
  
  if plr.y < box.y then
  	plr.y =box.y
- 	cam_y= cam_y - 1
+ 	cam_y-=1
  elseif plr.y > box.y2 then
  	plr.y =box.y2
- 	cam_x= cam_x + 1
+ 	cam_y+=1
  end
 end
 
 function draw_plr()
-  if plr.mining then
-			spr(flr(plr.msprite), plr.x, plr.y, 1, 1, plr.flp, false)  elseif plr.idle then
-   spr(6, plr.x, plr.y, 1, 1, plr.flp, false)
-  else
-   spr(flr(plr.sprite), plr.x, plr.y, 1, 1, plr.flp, false)
-  end
+	spr(flr(plr.sp), plr.x, plr.y, 1, 1, plr.flp, false)
 end
+
 
 
 
@@ -256,8 +248,8 @@ end
 
 function map_collide(x,y,w,h)
 
-	x = x + cam_x
-	y = y + cam_y
+	x+= cam_x
+	y+= cam_y
 	
 	s1=mget(x/8,y/8)
 	s2=mget((x+w-1)/8,y/8)
@@ -297,18 +289,18 @@ function upswap_tile(x,y)
 end
 
 function get_key(tx, ty)
-	plr.keys = plr.keys+ 1
+	plr.keys += 1
 	swap_tile(tx, ty)
 end
 
 function open_door(tx, ty)
-	plr.keys = plr.keys - 1
+	plr.keys -= 1
 	swap_tile(tx, ty)
 	mset(tx,ty,22)
 end
 
 function get_potion(tx, ty)
-	plr.potions = plr.keys+ 1
+	plr.potions += 1
 	swap_tile(tx, ty)
 end
 
@@ -342,6 +334,7 @@ function show_inventory()
 	print("potions:"..plr.potions, x, y + 12, 7) -- green
 end
 
+
 function can_move(x,y) 
 	-- this function give back a true or false wheter a maptile coordinate is a certain flag or not
 	-- in this case we are asking if that map coordinate is a wall
@@ -366,25 +359,37 @@ function break_block(tx, ty)
 end
 
 function mine_plr()
-	if btnp(4) then
-	plr.mining=true
-	plr.msprite = 10
-	
-  local cx = flr((plr.x + 4 + cam_x) / 8)
-  local cy = flr((plr.y + 4 + cam_y) / 8)
+	if btnp(🅾️) then
+		plr.state = "mining"
 
-  if plr.facing == "right" then
-    break_block(cx + 1, cy)
-  elseif plr.facing == "left" then
-    break_block(cx - 1, cy)
-  elseif plr.facing == "up" then
-    break_block(cx, cy - 1)
-  elseif plr.facing == "down" then
-    break_block(cx, cy + 1)
-  end
-  
+		local cx = flr((plr.x + 4 + cam_x) / 8)
+		local cy = flr((plr.y + 4 + cam_y) / 8)
 
-	else
-		plr.mining=false
+		if plr.facing == "right" then
+			get_rnd_key(cx + 1, cy)
+		elseif plr.facing == "left" then
+			get_rnd_key(cx - 1, cy)
+		elseif plr.facing == "up" then
+			get_rnd_key(cx, cy - 1)
+		elseif plr.facing == "down" then
+			get_rnd_key(cx, cy + 1)
+		end
+	end
+end
+
+
+function get_rnd_key(tx, ty)
+	local tile = mget(tx, ty)
+
+	if tile == 32 then
+		mset(tx, ty, 33)
+	elseif tile == 33 then
+		mset(tx, ty, 48)
+	elseif tile == 48 then
+		if rnd() < 0.4 then
+			mset(tx, ty, 18) 
+		else
+			mset(tx, ty, 8) -- normal background
+		end
 	end
 end
