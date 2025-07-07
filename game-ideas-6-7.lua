@@ -4,7 +4,9 @@ i_plr()
 	my=0
 	cam_x=0
 	cam_y=0
-	
+	max_key=2
+	message=""
+	message_t=45
 	wall=0
 	key=1
 	door=2
@@ -23,6 +25,9 @@ function _update()
  mine_plr()
 	move_player()
 	
+	if message_t > 0 then
+		message_t -= 1
+	end
 
 end
 
@@ -32,26 +37,12 @@ function _draw()
 	draw_plr()
 	check_win_lose()
 	
-	if false then
+	--debugging()
 	
-		-- draw camera box
-		rect(box.x,box.y,box.x2,box.y2)
-		print("x: "..plr.x,4,4,7)
-		print("y: "..plr.y,4,12,11)
-	
-		-- draw player box
-		rect(plr.x, plr.y, plr.x + plr.w - 1, plr.y + plr.h - 1, 8)
-
-		-- highlight tile being checked for interaction (now using centre)
-		local px = plr.x + plr.w / 2
-		local py = plr.y + plr.h / 2
-		local tx = flr((px + cam_x) / 8)
-		local ty = flr((py + cam_y) / 8)
-		local sx = tx * 8 - cam_x
-		local sy = ty * 8 - cam_y
-		rect(sx, sy, sx + 7, sy + 7, 11)
+	if message_t > 0 then
+		print(message, 4, 110, 10)
 	end
-	
+
 
 	local inv_text = "inventory"
 	local keys_text = "keys:"..plr.keys
@@ -62,9 +53,9 @@ function _draw()
 	local x = 128 - max_width - 1  -- 1-pixel padding from right
 	local y = 1
 
-	print(inv_text, x-8, y+8, 0)           -- black (colour 0)
-	print(keys_text, x-8, y + 16, 7)      -- white
-	print(potions_text, x-8, y + 24, 7)  -- white
+	print(inv_text, x-8, y+8, 0)           
+	print(keys_text, x-8, y + 16, 7)      
+	print(potions_text, x-8, y + 24, 7)  
 
 	if (btn(❎)) show_inventory()
 
@@ -183,7 +174,7 @@ function animate_plr()
 	
  -- single mining frame
 	else
-		plr.sp = 6 -- idle frame
+		plr.sp = 6 
 	end
 end
 
@@ -310,28 +301,54 @@ function interact()
 	local tx = flr((px + cam_x) / 8)
 	local ty = flr((py + cam_y) / 8)
 
+
 	if fget(mget(tx, ty), key) then
 		get_key(tx, ty)
-		print("picked up key", 4, 42, 10)
+		message = "picked up key"
+		sfx(0)
+		message_t = 45
 	elseif fget(mget(tx, ty), door) and plr.keys > 0 then
 		open_door(tx, ty)
-		print("opened door", 4, 50, 10)
+		message = "opened door"
+		message_t = 45
 	elseif fget(mget(tx, ty), potion) then
 		get_potion(tx, ty)
-		print("picked up a piction", 4, 50, 10)
+		message = "picked up a potion"
+		message_t = 45
 	end
+
 end
 
 
+function debugging()
+if true then
+	
+		-- draw camera box
+		rect(box.x,box.y,box.x2,box.y2)
+		print("x: "..plr.x,4,4,7)
+		print("y: "..plr.y,4,12,11)
+	
+		-- draw player box
+		rect(plr.x, plr.y, plr.x + plr.w - 1, plr.y + plr.h - 1, 8)
 
+		-- highlight tile being checked for interaction (now using centre)
+		local px = plr.x + plr.w / 2
+		local py = plr.y + plr.h / 2
+		local tx = flr((px + cam_x) / 8)
+		local ty = flr((py + cam_y) / 8)
+		local sx = tx * 8 - cam_x
+		local sy = ty * 8 - cam_y
+		rect(sx, sy, sx + 7, sy + 7, 11)
+	end
+end
 -->8
 function show_inventory()
 	local x = plr.x - 10
 	local y = plr.y - 20
 
-	print("inventory:", x, y, 0)              -- red (colour 8)
-	print("keys:"..plr.keys, x, y + 6, 7)     -- green (colour 11)
-	print("potions:"..plr.potions, x, y + 12, 7) -- green
+	print("inventory:", x, y, 0)              
+	print("keys:"..plr.keys, x, y + 6, 7)     
+	print("potions:"..plr.potions, x, y + 12, 7) 
 end
 
 
@@ -386,10 +403,16 @@ function get_rnd_key(tx, ty)
 	elseif tile == 33 then
 		mset(tx, ty, 48)
 	elseif tile == 48 then
+	if max_key>0 then --get key only if max key not reached
 		if rnd() < 0.4 then
-			mset(tx, ty, 18) 
+			mset(tx, ty, 18)
+			max_key -= 1  
 		else
-			mset(tx, ty, 8) -- normal background
+				mset(tx, ty, 8) 
+			end
+		else
+			mset(tx, ty, 8) 
 		end
+
 	end
 end
